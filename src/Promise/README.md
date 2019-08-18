@@ -25,18 +25,17 @@
 
 #### 2. promise对象方法
 
-1. 标准中只有一个then方法，没有catch，race，all等方法，甚至没有构造函数<br/>
+1. 标准中只有一个then方法，没有catch，race，all等方法，甚至没有构造函数
   Promise标准中仅指定了Promise对象的then方法的行为，其它一切我们常见的方法/函数都并没有指定，包括catch，race，all等常用方法，甚至也没有指定该如何构造出一个Promise对象，另外then也没有一般实现中（Q, $q等）所支持的第三个参数，一般称onProgress
-  <br/>
+<br>
 2. then方法返回一个新的Promise
   Promise的then方法返回一个新的Promise，而不是返回this，此处在下文会有更多解释
-  <br/>
     ```js
     promise2 = promise1.then(alert)
     promise2 != promise1 // true
     ```
 3. 不同Promise的实现需要可以相互调用(interoperable)
-  <br/>
+<br>
 4. Promise的初始状态为pending，它可以由此状态转换为fulfilled或者rejected，一旦状态确定，就不可以再次转换为其它状态，状态确定的过程称为settle
 
 #### 3. Promise的其他方法
