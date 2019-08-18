@@ -97,7 +97,7 @@ Promise.prototype.then = function (onResolve, onReject) {
   let self = this
   let promise2
   onResolve = typeof onResolve==='function' ? onResolve : function(value){return value}
-  onReject = typeof onReject==='function' ? onReject : function(value){throw value}
+  onReject = typeof onReject==='function' ? onReject : function(reason){throw reason}
   
   if (self.status === 'pending') {
      return promise2 = new Promise(function(resolve, reject){
