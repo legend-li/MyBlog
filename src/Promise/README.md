@@ -1,7 +1,7 @@
 # 从零一步一步实现一个完整版的Promise
 
-> Promise A+ 规范 
-[中文翻译版地址](https://malcolmyu.github.io/2015/06/12/Promises-A-Plus/) 
+> Promise A+ 规范 <br>
+[中文翻译版地址](https://malcolmyu.github.io/2015/06/12/Promises-A-Plus/) <br>
 [英文原版地址](https://promisesaplus.com/)
 
 ### Promise标准解读
@@ -1050,5 +1050,7 @@ node ./Promise.js
 #### 相关知识参考资料
 
 [Promises/A+规范-英文](https://promisesaplus.com/)
+
 [Promises/A+规范-翻译-推荐](https://malcolmyu.github.io/2015/06/12/Promises-A-Plus/)
+
 [剖析Promise内部结构](https://github.com/xieranmaya/blog/issues/3)
