@@ -472,6 +472,27 @@ function resolvePromise (promise2, x, resolve, reject) {
   let thenCalledOrThrow = false
 
   if (promise2 === x) { // 对应标准2.3.1节
+    // 这里可能有童鞋会问，什么时候会触发promise2 === x这个条件，首先我们对标准2.3.1节中的promise2===x在做下解释
+    // 条件promise === x ，相当于promise.then之后return了自己，因为then会等待return后的promise，导致自己等待自己，一直处于等待。
+    /** 
+      比如:
+        let p1 = new Promise(function(resolve, reject) {
+          setTimeout(() => {reject(1.1)}, 1000)
+        })
+        let p1then = p1.then(function (value) {
+          return p1then
+        }, function (err) {
+          return p1then
+        })
+        
+        p1then.then(value => {
+          console.log('value:', value)
+        }, err => {
+          console.log('err:', err)
+        })
+      这段代码就会触发promise2 === x的判断，我们为了promise不一直处于等待状态，根据标准规范，
+      这里我们需要抛出'Chaining cycle detected for promise'，即‘循环引用’的错误信息
+    */
     reject(new TypeError('Chaining cycle detected for promise!'))
     return
   }

@@ -245,6 +245,19 @@ Promise.all([p1, p2]).then(res => {
   console.log('err:', err)
 })
 
+// 测试promise2 === x
+// let p1then = p1.then(function (value) {
+//   return p1then
+// }, function (err) {
+//   return p1then
+// })
+
+// p1then.then(value => {
+//   console.log('value:', value)
+// }, err => {
+//   console.log('err:', err)
+// })
+
 
 // Promise核心内容完整测试方法
 // let promisesAplusTests =  require("promises-aplus-tests")
