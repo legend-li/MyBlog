@@ -2,10 +2,13 @@
 
 ### 前言
   ```redux```是什么？
+
   ```redux```是一个状态管理器
 
 ### 简单的状态管理器
-```redux```是一个状态管理器，那么状态是什么？状态就是数据，状态管理器也就是数据管理器。那么我们来实现一个简单的状态管理器吧。
+```redux```是一个状态管理器，那么状态是什么？
+
+状态就是数据，状态管理器也就是数据管理器。那么我们来实现一个简单的状态管理器吧。
 ##### 1. 状态管理器得有一个存储状态的地方吧，我们既然叫状态管理器，那就定义一个```state```变量吧，作为存储状态的地方。
 ``` js
 let state = {
@@ -281,7 +284,9 @@ updateState({
 > {count: "傻了吧"}
 ```
 从输出我们可以看出，```count```被修改成了我们字符串，我们期望是```count```是```number```类型，解决这个问题的办法就是，我们修改状态的时候，来按照期望来修改状态。
+
 怎么让修改状态的时候，按照我们期望来修改呢？
+
 我们可以这样：
 
 ##### 1. 我们定义一个状态修改行为（```action```）
@@ -541,7 +546,10 @@ dispatch({
 })
 console.log(getState())
 ```
-从这段代码，我们可以看出，随着管理的数据量的增加，我们在```reducer```中写的逻辑就越来越多，而且，每次```dispatch```执行的时候，传给```dispatch```的```action```内容太多，阅读起来有点麻烦，看到的是一大坨代码。怎么优化一下呢？
+从这段代码，我们可以看出，随着管理的数据量的增加，我们在```reducer```中写的逻辑就越来越多，而且，每次```dispatch```执行的时候，传给```dispatch```的```action```内容太多，阅读起来有点麻烦，看到的是一大坨代码。
+
+怎么优化一下呢？
+
 我们可以这样优化：
 ##### 1. 把```reducer```拆分成多个```reducer```，每个子```state```对应一个```reducer```，```studyPerson```、```playfulPerson```、```books```都是子```state```。
 ##### 2. 把每个子```state```对应的```reducer```合并成一个```rootReducer```，然后把```rootReducer```传递给```createStore```
@@ -717,7 +725,9 @@ dispatch(setPlayfulPerson({
 console.log(getState())
 ```
 拆分完```reducer```，并且把```action```按类划分到单独的```js```文件中后，我们的```index.js```看起来要稍微简略一些了，但是好像还是有很多代码。我们看看还有可以封装的地方吗？
+
 仔细看我们刚才实现的代码，初始化```state```的代码占用了一大坨区域，合并子```reducer```的代码好像也可以抽离为工具方法
+
 ##### 1. 我们先来抽离合并子```reducer```的代码
 前面我们实现的合并子```reducer```的代码如下：
 ``` js
@@ -732,6 +742,7 @@ let rootReducer = (state, action) => {
 ...
 ```
 可以看到我们是定义了一个```rootReducer```函数，函数返回一个```state```对象，对象每个属性的值对应一个子```reducer```的执行，子```reducer```执行完毕返回的就是属性对于的子```state```值。
+
 我们想想一下，我们是否可以实现一个方法（方法就叫```combineReducers```），这个方法只接收子```reducer```，返回一个```rootReducer```，这样我们只需要调用这个方法，就可以生成```rootReducer```了，比如：
 ``` js
 const rootReducer = combineReducers({
@@ -755,6 +766,7 @@ const combineReducers = (reducers) => {
 ```
 ##### 2. 拆分和合并state
 我们把```reducer```拆分为一个一个的子```reducer```，通过 ```combineReducers```合并了起来。但是还有个问题，```state``` 我们还是写在一起的，这样会造成```state```树很庞大，不直观，很难维护。我们需要拆分，一个```state```，一个 ```reducer```写一块。
+
 我们先修改下```reducers.js```:
 ``` js
 //文件 ./reducers.js
@@ -850,10 +862,282 @@ export {
   combineReducers,
 }
 ```
-本小节完整源码见 [demo-4](https://github.com/legend-li/MyBlog/tree/master/src/Redux/demo1)
+本小节完整源码见 [demo-1](https://github.com/legend-li/MyBlog/tree/master/src/Redux/demo1)
 
-到这里为止，我们的redux已经实现的差不多啦！
+到这里为止，我们的```redux```已经实现的差不多啦！
 
 ### 中间件 middleware
 
-写作中。。。
+什么是```Redux```中间件？
+
+```Redux```的中间件可以理解为是对```dispatch```方法的包装，增强```dispatch```的功能。
+
+##### 1. 尝试包装下dispatch
+
+假如我们需要在每次```redux```修改```state```的时候，打印下修改前的```state```和修改后的```state```以及触发修改```state```的```action```；
+
+我们可以暂时这么包装下```dispatch```：
+
+```js
+import { createStore, combineReducers } from './redux.js'
+
+const rootReducer = combineReducers({
+    count: countReducer
+})
+
+const store = createStore(rootReducer);
+
+const next = store.dispatch;
+
+store.dispatch = (action) => {
+  console.log('previous state:', store.getState())
+  next(action)
+  console.log('next state:', store.getState())
+  console.log('action:', action)
+}
+
+store.dispatch({
+  type: 'INCREMENT'
+});
+```
+我们来运行下代码，输出结果是：
+```js
+> previous state: {count: 0}
+
+> next state: {count: 0}
+
+> action: {type: "INCREMENT"}
+```
+从输出结果可以看出，我们实现了对```dispatch```的增强。在改变```state```的时候，正确的打印出了改变```state```前的```state```值，改变后的```state```的值，以及触发```state```改变的```action```。
+
+##### 2. 多中间件组合包装```dispatch```
+
+上面我们实现了一个增强```dispatch```需求，如果现在我们在原有需求的基础上，又有了一个新的增强需求。比如：我想在每次```state```改变的时候，打印下当前时间。
+
+尝试实现下代码：
+``` js
+const store = createStore(rootReducer);
+
+const next = store.dispatch;
+
+store.dispatch = (action) => {
+  console.log('state change time:', new Date().toLocaleString())
+  console.log('previous state:', store.getState())
+  next(action)
+  console.log('next state:', store.getState())
+  console.log('action:', action)
+}
+```
+如果我们，现在又有新的增强需求了，要记录每次改变state时出错的原因，我们再改下增强代码:
+``` js
+const store = createStore(rootReducer);
+
+const next = store.dispatch;
+
+store.dispatch = (action) => {
+  try {
+    console.log('state change time:', new Date().toLocaleString())
+    console.log('previous state:', store.getState())
+    next(action)
+    console.log('next state:', store.getState())
+    console.log('action:', action)
+  } catch (e) {
+    console.log('错误信息：', e)
+  }
+}
+```
+如果又双叒叕有新的增强需求了呢。。。。。。
+
+是不是一直这么该增强代码，很麻烦，到时候dispatch函数会越来越庞大，很难维护。所以这个方式不可取，我们要考虑如何实现扩展性更强的多中间件包装dispatch的方法。
+
+1. 把不同的增强需求，抽离成单个的函数:
+``` js
+const store = createStore(rootReducer);
+
+const next = store.dispatch;
+
+const loggerMiddleware = (action) => {
+  console.log('previous state:', store.getState())
+  next(action)
+  console.log('next state:', store.getState())
+  console.log('action:', action)
+}
+
+const updateTimeMiddleware = (action) => {
+  console.log('state change time:', new Date().toLocaleString())
+  loggerMiddleware(action)
+}
+
+const exceptionMiddleware = (action) => {
+  try {
+    updateTimeMiddleware(action)
+  } catch (e) {
+    console.log('错误信息：', e)
+  }
+}
+
+store.dispatch = exceptionMiddleware
+```
+这样，看起来是把各个增强需求都抽离成单个的函数了，但是都不是纯函数，对外部数据有依赖，这样很不利于扩展。
+
+我们来把这些增强函数都改成纯函数吧。
+
+我们分两步来改造增强函数:
+（1）把增强函数内调用的增强函数，都抽离出来，作为参数传递进增强函数：
+``` js
+const store = createStore(rootReducer);
+
+const next = store.dispatch;
+
+const loggerMiddleware = (next) => (action) => {
+  console.log('previous state:', store.getState())
+  next(action)
+  console.log('next state:', store.getState())
+  console.log('action:', action)
+}
+
+const updateTimeMiddleware = (next) => (action) => {
+  console.log('state change time:', new Date().toLocaleString())
+  next(action)
+}
+
+const exceptionMiddleware = (next) => (action) => {
+  try {
+    next(action)
+  } catch (e) {
+    console.log('错误信息：', e)
+  }
+}
+
+store.dispatch = exceptionMiddleware(updateTimeMiddleware(loggerMiddleware(next)))
+```
+（2）把增强函数内对store的调用抽离出来，作为参数传递进增强函数：
+``` js
+const store = createStore(rootReducer);
+
+const next = store.dispatch;
+
+const loggerMiddleware = (store) => (next) => (action) => {
+  console.log('previous state:', store.getState())
+  next(action)
+  console.log('next state:', store.getState())
+  console.log('action:', action)
+}
+
+const updateTimeMiddleware = (store) => (next) => (action) => {
+  console.log('state change time:', new Date().toLocaleString())
+  next(action)
+}
+
+const exceptionMiddleware = (store) => (next) => (action) => {
+  try {
+    next(action)
+  } catch (e) {
+    console.log('错误信息：', e)
+  }
+}
+
+const logger = loggerMiddleware(store)
+const updateTime = updateTimeMiddleware(store)
+const exception = exceptionMiddleware(store)
+
+store.dispatch = exception(updateTime(logger(next)))
+```
+到这里为止，我们真正的实现了可扩展的、独立的、纯的增强函数（增强函数即```redux```中间件），并且多个增强函数可以很方便的组合使用。
+
+##### 3. 优化中间件的使用方式
+
+我们上面已经实现了可扩展、独立的、纯的中间件，但是我们最后还需要执行
+``` js
+const logger = loggerMiddleware(store)
+const updateTime = updateTimeMiddleware(store)
+const exception = exceptionMiddleware(store)
+```
+来生成```logger```、```updateTime```、```exception```，
+并且执行
+``` js
+store.dispatch = exception(updateTime(logger(next)))
+```
+来覆盖```store```的```dispatch```方法。
+
+其实我们没必要关心中间件怎么使用，我们只需要知道有三个中间件，剩下的细节都封装起来。
+
+比如，我们可以通过包装```createStore```来把中间件使用细节都封装在包装```createStore```的代码内。
+
+期望的用法：
+``` js
+/**
+ * applyMiddleware 接收中间件，把中间件使用细节包装在了 
+ * applyMiddleware 内部，然后返回一个函数，
+ * 函数接收旧的 createStore，返回新的 createStore
+ */
+const newCreateStore = applyMiddleware(exceptionMiddleware, updateTimeMiddleware, loggerMiddleware)(createStore);
+
+// newCreateStore 返回了一个 dispatch 被重写过的 store
+const store = newCreateStore(reducer);
+```
+
+实现applyMiddleware：
+``` js
+const applyMiddleware = (...middlewares) => (oldCreateStore) => (reducer, initState) {
+  // 生成 store
+  let store = oldCreateStore(reducer, initState)
+  // 给每个 middleware 传递进去 store，相当于 loggerMiddleware(store)
+  // 执行结果相当于 chain = [logger, updateTime, exception]
+  let chain = middlewares.map(middleware => middleware(store))
+  // 获取 store 的 dispatch 方法
+  let next = store.dispatch
+  // 实现 exception(updateTime(logger(next)))
+  chain.reverse().map(middleware => {
+    next = middleware(next)
+  })
+  // 替换 store 的 dispatch 方法
+  store.dispatch = next
+  // 返回新的 store
+  return store
+}
+```
+
+我们现在包装```createStore```的代码在```createStore```函数外面，为了使用上的方便，我们稍微修改下```createStore```函数，期望用法：
+``` js
+const rewriteCreateStoreFunc = applyMiddleware(exceptionMiddleware, updateTimeMiddleware, loggerMiddleware)
+
+const store = createStore(reducer, initState, rewriteCreateStoreFunc)
+```
+
+```createStore```修改后的代码如下：
+
+``` js
+const createStore = (reducer, initState, rewriteCreateStoreFunc) => {
+  //如果有 rewriteCreateStoreFunc，那就生成新的 createStore
+  if(rewriteCreateStoreFunc){
+      const newCreateStore =  rewriteCreateStoreFunc(createStore);
+      return newCreateStore(reducer, initState);
+  }
+  
+
+  // 以下为旧 createStore 逻辑
+  let listeners = []
+  let state = initState || {}
+
+  const getState = () => state
+
+  const dispatch = (action) => {
+    state = reducer(state, action)
+    listeners.forEach(listerner => listerner())
+  }
+
+  const subscribe = (listener) => {
+    listeners.push(listener)
+  }
+
+  //注意：Symbol() 不跟任何值相等，所以 type 为 Symbol()，则 reducer 不匹配任何 type，走 default 逻辑，返回初始化 state 值，这样就达到了初始化 state 的效果。
+  dispatch({ type: Symbol() })
+
+  return {
+    getState,
+    dispatch,
+    subscribe,
+  }
+}
+```
