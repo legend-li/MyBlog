@@ -1,4 +1,4 @@
-# 从零一步一步实现一个完整版的Redux
+# 从零一步一步实现一个Redux
 
 ### 前言
   ```redux```是什么？
@@ -114,7 +114,7 @@ updateState({
 
 > {name: "混沌传奇", like: "打乒乓球"}
 ```
-##### 5. 升级了```updateState```方法之后，我们把我们的状态管理器再封装一下吧，现在的```listeners```和```state```都报漏在外面，容易被别人更改
+##### 5. 升级了```updateState```方法之后，我们把我们的状态管理器再封装一下吧，现在的```listeners```和```state```都报露在外面，容易被别人更改
 ``` js
 const createStore = (initState) => {
   let listeners = []
@@ -283,7 +283,7 @@ updateState({
 
 > {count: "傻了吧"}
 ```
-从输出我们可以看出，```count```被修改成了我们字符串，我们期望是```count```是```number```类型，解决这个问题的办法就是，我们修改状态的时候，来按照期望来修改状态。
+从输出我们可以看出，```count```被修改成了字符串类型，我们期望是```count```是```number```类型，解决这个问题的办法就是，我们修改状态的时候，来按照期望来修改状态。
 
 怎么让修改状态的时候，按照我们期望来修改呢？
 
@@ -1083,7 +1083,7 @@ const applyMiddleware = (...middlewares) => (oldCreateStore) => (reducer, initSt
   // 生成 store
   let store = oldCreateStore(reducer, initState)
   // 给每个 middleware 传递进去 store，相当于 loggerMiddleware(store)
-  // 为了防止中间件修改 store 的其他方法，我们只报漏 store 的 getState 方法
+  // 为了防止中间件修改 store 的其他方法，我们只报露 store 的 getState 方法
   // 执行结果相当于 chain = [logger, updateTime, exception]
   let chain = middlewares.map(middleware => middleware({ getState: store.getState }))
   // 获取 store 的 dispatch 方法
