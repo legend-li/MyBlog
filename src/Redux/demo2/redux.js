@@ -1,10 +1,4 @@
 const createStore = (reducer, initState, rewriteCreateStoreFunc) => {
-  // 兼容省略参数 initState
-  if (typeof initState === 'function') {
-    rewriteCreateStoreFunc = initState
-    initState = undefined
-  }
-
   // 如果有 rewriteCreateStoreFunc，那就生成新的 createStore
   if(rewriteCreateStoreFunc){
       const newCreateStore =  rewriteCreateStoreFunc(createStore);
@@ -25,16 +19,6 @@ const createStore = (reducer, initState, rewriteCreateStoreFunc) => {
 
   const subscribe = (listener) => {
     listeners.push(listener)
-    return () => {
-      const index = listeners.indexOf(listener)
-      listeners.splice(index, 1)
-    }
-  }
-
-  function replaceReducer(nextReducer) {
-    reducer = nextReducer
-    // 把新的 reducer 的默认状态更新到 state 树上
-    dispatch({ type: Symbol() })
   }
 
   // 注意：Symbol() 不跟任何值相等，所以 type 为 Symbol()，则 reducer 不匹配任何 type，走 default 逻辑，返回初始化 state 值，这样就达到了初始化 state 的效果。
@@ -44,7 +28,6 @@ const createStore = (reducer, initState, rewriteCreateStoreFunc) => {
     getState,
     dispatch,
     subscribe,
-    replaceReducer,
   }
 }
 

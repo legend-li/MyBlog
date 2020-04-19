@@ -1079,12 +1079,13 @@ const store = newCreateStore(reducer);
 
 实现applyMiddleware：
 ``` js
-const applyMiddleware = (...middlewares) => (oldCreateStore) => (reducer, initState) {
+const applyMiddleware = (...middlewares) => (oldCreateStore) => (reducer, initState) => {
   // 生成 store
   let store = oldCreateStore(reducer, initState)
   // 给每个 middleware 传递进去 store，相当于 loggerMiddleware(store)
+  // 为了防止中间件修改 store 的其他方法，我们只报漏 store 的 getState 方法
   // 执行结果相当于 chain = [logger, updateTime, exception]
-  let chain = middlewares.map(middleware => middleware(store))
+  let chain = middlewares.map(middleware => middleware({ getState: store.getState }))
   // 获取 store 的 dispatch 方法
   let next = store.dispatch
   // 实现 exception(updateTime(logger(next)))
@@ -1141,3 +1142,183 @@ const createStore = (reducer, initState, rewriteCreateStoreFunc) => {
   }
 }
 ```
+
+本小节完整源码见 [demo-2](https://github.com/legend-li/MyBlog/tree/master/src/Redux/demo2)
+
+到这里，我们的```redux```中间件功能全部实现完了。
+
+### redux其他功能
+
+##### 退订
+
+```store.subscribe```是用来订阅```state```变化方法，既然有订阅，那么就存在取消订阅的需求，我们来实现下取消订阅功能。
+
+修改```store.subscribe```的实现如下：
+``` js
+const subscribe = (listener) => {
+  listeners.push(listener)
+  return () => {
+    const index = listeners.indexOf(listener)
+    listeners.splice(index, 1)
+  }
+}
+```
+
+使用方法如下：
+``` js
+// 订阅
+const unsubscribe = store.subscribe(() => {
+  let state = store.getState();
+  console.log(state);
+});
+// 退订
+unsubscribe();
+```
+
+##### createStore函数可以省略initState参数
+
+```createStore```允许省略```initState```参数，比如这样：
+``` js
+let store = createStore(rootReducer, rewriteCreateStoreFunc)
+```
+修改下我们的```createStore```方法，兼容省略```initState```参数的用法：
+``` js
+const createStore = (reducer, initState, rewriteCreateStoreFunc) => {
+  // 兼容省略参数 initState
+  if (typeof initState === 'function') {
+    rewriteCreateStoreFunc = initState
+    initState = undefined
+  }
+
+  // 如果有 rewriteCreateStoreFunc，那就生成新的 createStore
+  if(rewriteCreateStoreFunc){
+      const newCreateStore =  rewriteCreateStoreFunc(createStore);
+      return newCreateStore(reducer, initState);
+  }
+  
+
+  // 以下为旧 createStore 逻辑
+  let listeners = []
+  let state = initState || {}
+
+  const getState = () => state
+
+  const dispatch = (action) => {
+    state = reducer(state, action)
+    listeners.forEach(listerner => listerner())
+  }
+
+  const subscribe = (listener) => {
+    listeners.push(listener)
+    return () => {
+      const index = listeners.indexOf(listener)
+      listeners.splice(index, 1)
+    }
+  }
+
+  // 注意：Symbol() 不跟任何值相等，所以 type 为 Symbol()，则 reducer 不匹配任何 type，走 default 逻辑，返回初始化 state 值，这样就达到了初始化 state 的效果。
+  dispatch({ type: Symbol() })
+
+  return {
+    getState,
+    dispatch,
+    subscribe,
+  }
+}
+```
+
+##### replaceReducer方法
+
+有时候，我们的页面做了按需加载，如果想把每个按需加载的页面的组件对应的```reducer```也按需加载，可以通过```replaceReducer```来实现，比如：
+``` js
+// 初始页面需要的 reducer
+const reducer = combineReducers({
+  books: booksReducer
+});
+const store = createStore(reducer);
+
+// 按需加载的页面1需要的 reducer，在页面加载的时候再加载
+// 然后，通过 combineReducers 生成新的 reducer
+// 最后通过 store.replaceReducer 方法把新的 reducer 替换掉旧的 reducer
+const nextReducer = combineReducers({
+  playfulPerson: playfulPersonReducer,
+  books: booksReducer,
+});
+store.replaceReducer(nextReducer);
+
+// 按需加载的页面2需要的 reducer，在页面加载的时候再加载
+// 然后，通过 combineReducers 生成新的 reducer
+// 最后通过 store.replaceReducer 方法把新的 reducer 替换掉旧的 reducer
+const nextReducer = combineReducers({
+  studyPerson: studyPersonReducer,
+  playfulPerson: playfulPersonReducer,
+  books: booksReducer,
+});
+store.replaceReducer(nextReducer);
+```
+
+```createStore```函数内部新增```replaceReducer```方法，同时返回的```store```中包含```replaceReducer```方法，代码实现如下：
+``` js
+const createStore = (reducer, initState, rewriteCreateStoreFunc) => {
+  // 兼容省略参数 initState
+  if (typeof initState === 'function') {
+    rewriteCreateStoreFunc = initState
+    initState = undefined
+  }
+
+  // 如果有 rewriteCreateStoreFunc，那就生成新的 createStore
+  if(rewriteCreateStoreFunc){
+      const newCreateStore =  rewriteCreateStoreFunc(createStore);
+      return newCreateStore(reducer, initState);
+  }
+  
+
+  // 以下为旧 createStore 逻辑
+  let listeners = []
+  let state = initState || {}
+
+  const getState = () => state
+
+  const dispatch = (action) => {
+    state = reducer(state, action)
+    listeners.forEach(listerner => listerner())
+  }
+
+  const subscribe = (listener) => {
+    listeners.push(listener)
+    return () => {
+      const index = listeners.indexOf(listener)
+      listeners.splice(index, 1)
+    }
+  }
+
+  function replaceReducer(nextReducer) {
+    reducer = nextReducer
+    // 把新的 reducer 的默认状态更新到 state 树上
+    dispatch({ type: Symbol() })
+  }
+
+  // 注意：Symbol() 不跟任何值相等，所以 type 为 Symbol()，则 reducer 不匹配任何 type，走 default 逻辑，返回初始化 state 值，这样就达到了初始化 state 的效果。
+  dispatch({ type: Symbol() })
+
+  return {
+    getState,
+    dispatch,
+    subscribe,
+    replaceReducer,
+  }
+}
+```
+至此，我要实现的一个```redux```已经全部实现了，为了缩短篇幅，省略了用的比较少的```bindActionCreators```方法的讲解和实现，同时实现代码中去掉了各种校验代码。
+
+完整的示例源码见 [demo-3](https://github.com/legend-li/MyBlog/tree/master/src/Redux/demo3)
+
+### 最后
+
+文中提到了```纯函数```，那么什么是```纯函数```呢？
+
+简单来说，就是相同的输入，得到的输出永远是一样的，没有任何副作用。
+
+```纯函数```属于函数式编程中的一个概念。
+
+给大家推荐一本js函数式编程指南的书，支持在线浏览[函数式编程指南](https://llh911001.gitbooks.io/mostly-adequate-guide-chinese/content/)
