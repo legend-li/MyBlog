@@ -114,7 +114,7 @@ updateState({
 
 > {name: "混沌传奇", like: "打乒乓球"}
 ```
-##### 5. 升级了```updateState```方法之后，我们把我们的状态管理器再封装一下吧，现在的```listeners```和```state```都报露在外面，容易被别人更改
+##### 5. 升级了```updateState```方法之后，我们把我们的状态管理器再封装一下吧，现在的```listeners```和```state```都暴露在外面，容易被别人更改
 ``` js
 const createStore = (initState) => {
   let listeners = []
@@ -1083,7 +1083,7 @@ const applyMiddleware = (...middlewares) => (oldCreateStore) => (reducer, initSt
   // 生成 store
   let store = oldCreateStore(reducer, initState)
   // 给每个 middleware 传递进去 store，相当于 loggerMiddleware(store)
-  // 为了防止中间件修改 store 的其他方法，我们只报露 store 的 getState 方法
+  // 为了防止中间件修改 store 的其他方法，我们只暴露 store 的 getState 方法
   // 执行结果相当于 chain = [logger, updateTime, exception]
   let chain = middlewares.map(middleware => middleware({ getState: store.getState }))
   // 获取 store 的 dispatch 方法
