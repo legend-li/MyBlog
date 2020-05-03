@@ -151,6 +151,8 @@ getDataTransfrom('fun', numberTransfrom, stringTransfrom) // >> numberTransfrom
 说白了，就是把实现细节隐藏起来，只报漏抽象出来的使用API。让程序员可以专注在处理少数重要的部分。不用关注底层实现逻辑。提高开发效率，降低开发难度。
 
 #### 简单的抽象
+
+##### froEach函数
 在业务开发中，经常会用到```forEach```函数来遍历数组，并且在遍历时，针对每个遍历到的值做处理。下面我们用高阶函数来抽象出一个```forEach```函数:
 ``` js
 const forEach = (fn, arr) => {
@@ -170,6 +172,7 @@ forEach((val, i, arr) => {
 
 > 对 for...of 不熟悉的，可以看看MDN上的用法文档：[https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Statements/for...of](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Statements/for...of)
 
+##### forEachObj函数
 既然实现了一个遍历数组的函数，那么对象的遍历不妨也用高阶函数来抽象一个出来：
 ``` js
 const forEachObj = (fn, obj) => {
@@ -191,6 +194,7 @@ forEachObj((val) => {
 ```
 ```forEach```和```forEachObj```都是高阶函数，都专注于任务处理（通过传递函数到```forEach```内），抽象出来的是遍历的部分。
 
+##### unless函数
 下面以抽象的方式实现对流程控制的处理。
 
 创建一个```unless```函数，函数接受两个参数，第一个参数为条件，第二个参数为处理逻辑。如果第一个参数的值为```false```，则执行第二个参数（第二个参数为回调处理函数）。```unless```函数实现如下：
@@ -202,12 +206,13 @@ const unless = (predicate, fn) => {
 forEach(val => {
   unless(val%2, () => console.log(val))
 }, [1,2,3,4,5,6])
-// > 2
-// > 4
-// > 6
+// >> 2
+// >> 4
+// >> 6
 ```
 上面这段代码会从数组中取出偶数，然后打印出偶数的值。```unless```实现了流程控制的抽象，只有第一个参数为```false```时，才执行回调处理逻辑。
 
+##### times函数
 再看下```forEach```这段代码，如果我们要循环0-1000的数字呢，用```forEach```就不太合适了，构造一个0-1000的数字组成的数组，太大，而且也比较占内存。下面我们实现一个```times```函数来解决这个问题：
 ``` js
 const times = (fn, times) => {
@@ -222,12 +227,237 @@ times((val) => {
 ```
 
 #### 稍微复杂点的抽象
-在开发中，经常会遇到需要判断一个数组的每一项是否都满足某些特定条件，如果满足则执行一些逻辑处理。
 
-// 写作中。。。
+##### every函数
+在开发中，经常会遇到需要判断一个数组的每一项是否都满足某些特定条件，如果满足则执行一些逻辑处理。下面用高阶函数抽象一个```every```函数来解决这个问题。
+``` js
+const every = (fn, arr) => {
+  let i = 0, res = true
+  for (const val of arr) {
+    res = res && !!fn(val, i++, arr)
+    if (!res) break
+  }
+  return res
+}
+
+let arr = [0,1,2,3,4,5,6]
+every(val => {
+    return val < 3 ? true : false
+}, arr) // >> false
+```
+
+##### some函数
+相反，有时候，需要判断数组中是否包含某个值。把这种应用场景抽象为```some```函数，如下：
+``` js
+const some = (fn, arr) => {
+  let i = 0, res = false
+  for (const val of arr) {
+    res = res || !!fn(val, i++, arr)
+    if (res) break
+  }
+  return res
+}
+
+let arr = [0,1,2,3,4,5,6]
+some((val, i) => {
+    return val > 3 ? true : false
+}, arr) // >> true
+```
+
+##### sort函数
+javascript 的数组数据在原型上提供了```sort```函数，用来对数组进行排序。
+
+语法为：arr.sort([compareFunction])
+
+参数```compareFunction```可选，用来指定按某种顺序进行排列的函数。如果省略，元素按照转换为的字符串的各个字符的Unicode位点进行排序。
+
+```compareFunction```接收两个参数：```firstEl```第一个用于比较的元素，```secondEl```第二个用于比较的元素。
+
+```sort```返回值：排序后的数组。请注意，数组已原地排序，并且不进行复制。
+用法示例：
+``` js
+const months = ['March', 'Jan', 'Feb', 'Dec'];
+months.sort();
+console.log(months);
+// expected output: Array ["Dec", "Feb", "Jan", "March"]
+```
+假设，我们要对一个对象数组排序，比如：
+``` js
+let items = [
+  { name: 'Edward', value: 21 },
+  { name: 'Sharpe', value: 37 },
+  { name: 'And', value: 45 },
+  { name: 'The', value: -12 },
+  { name: 'Magnetic' },
+  { name: 'Zeros', value: 37 }
+]
+
+// sort by value
+items.sort(function (a, b) {
+  return (a.value - b.value)
+})
+
+// sort by name
+items.sort(function(a, b) {
+  var nameA = a.name.toUpperCase(); // ignore upper and lowercase
+  var nameB = b.name.toUpperCase(); // ignore upper and lowercase
+  if (nameA < nameB) {
+    return -1;
+  }
+  if (nameA > nameB) {
+    return 1;
+  }
+  // names must be equal
+  return 0;
+})
+```
+可以看到，在对```items```这个对象数组进行排序的时候，我们基于```value```和```name```进行的排序逻辑，都需要写单独的排序比较函数```compareFunction```，这样明显是一种重复的工作，完全可以用高阶函数来把这个比较函数抽象成通用的```sortBy```函数。
+比如：
+``` js
+const sortBy = (property, fn) => {
+  return (a, b) => {
+    if (typeof fn === 'function') {
+      return fn(a[property]) < fn(b[property]) ? -1 : fn(a[property]) > fn(b[property]) ? 1 : 0
+    } else {
+      return a[property] < b[property] ? -1 : a[property] > b[property] ? 1 : 0
+    }
+  }
+}
+
+let items = [
+  { name: 'Edward', value: 21 },
+  { name: 'Sharpe', value: 37 },
+  { name: 'And', value: 45 },
+  { name: 'The', value: -12 },
+  { name: 'Magnetic' },
+  { name: 'Zeros', value: 37 }
+]
+
+// sort by value
+items.sort(sortBy('value'))
+
+// sort by name
+items.sort(sortBy('name'), name => name.toUpperCase())
+```
+这样把比较函数抽象为一个```sortBy```函数后，是不是使用更加简便，代码量更少，更利于阅读和后期代码维护？
 
 ### 闭包与闭包的用处
-写作中。。。
+什么是闭包？
+通常来说，闭包是指有权访问另一个函数作用域中的变量的函数。举个例子：
+``` js
+const outer = (props) => {
+  const inner = () => {
+    console.log(props)
+  }
+  return inner
+}
+
+const fn = outer('outer function')
+fn() // >> 'outer function'
+```
+这段代码，在```outer```函数内部创建了一个```inner```函数，然后把```inner```函数返回出去了，```inner```拥有了```outer```函数的作用域的访问权限，即使```inner```在```outer```函数外部被执行，也拥有```outer```函数作用域的访问权限，比如```fn```函数执行时，会输出```'outer function'```，就说明```inner```函数对```outer```函数的参数```props```的引用依然存在，这就是闭包的一种代码表现。
+
+简言之，闭包就是拥有另一个函数作用域中变量的访问权限的函数。比如```inner```函数。
+
+另外，闭包有3个可访问的作用域：
+1. 在自身声明之内声明的变量
+2. 对全局变量的访问
+3. 对包含它的外部函数的变量的访问
+
+举例如下：
+``` js
+const global = 'global'
+const outer = (props) => {
+  const inner = (val) => {
+    console.log(`props: ${props}, val: ${val}, global: ${global}`)
+  }
+  return inner
+}
+
+const fn = outer('name')
+fn('混沌传奇') // >> 'props: name, val: 混沌传奇, global: global'
+```
+```fn('混沌传奇')```在执行时，```inner```函数访问了```val```的值、```props```的值和```global```的值，```val```属于```inner```自身的形参变量，```props```属于```outer```的形参变量，```global```属于全局变量。
+
+也可以理解为闭包```inner```记住了它的上下文。
+
+你可能会问闭包有什么用？
+
+其实前面已经使用过闭包了。比如```sortBy```函数。
+``` js
+const sortBy = (property, fn) => {
+  return (a, b) => {
+    if (typeof fn === 'function') {
+      return fn(a[property]) < fn(b[property]) ? -1 : fn(a[property]) > fn(b[property]) ? 1 : 0
+    } else {
+      return a[property] < b[property] ? -1 : a[property] > b[property] ? 1 : 0
+    }
+  }
+}
+```
+```sortBy```函数接受两个参数，并返回一个匿名函数，匿名函数接收两个参数：a和b，返回的这个匿名函数持有了```sortBy```函数的两个形参```property```、```fn```的引用，这个匿名函数其实就形成了闭包。
+
+下面用闭包和高阶函数来封装一些常用函数。
+
+##### once函数
+在一些时候，我们可能想要我们的函数只执行一次之后，就不再执行了。比如，在浏览器页面中，我只想设置一次第三方库，或者初始化一些全局配置等。
+我们来编写一个```once```函数来解决这个问题。
+``` js
+const once = (fn) => {
+  let done = false
+  return (...args) => {
+    return done ? undefined : (done = true, fn.apply(this, args))
+  }
+}
+
+const printNameVal = once((name, like) => console.log(`name:${name}, like:${like}`))
+
+printNameVal('混沌传奇', 'Coding')
+printNameVal('小宝贝', 'Reading')
+
+// >> name:混沌传奇, like:Coding
+```
+通过执行```once```返回了一个函数存储在变量```printNameVal```中，执行了两次```printNameVal```， 最终打印了```name:混沌传奇, like:Coding```，```name:小宝贝, like:Reading```并没有被打印出来，说明传递给```once```的匿名函数```(name, like) => console.log(`name:${name}, like:${like}`)```只被执行了一次。基本实现了对```once```函数的诉求。
+
+##### memoized函数
+这一章节的最后，我要再给大家介绍一个函数```memoized```，从函数名字可以看出这个函数跟缓存有关系。下面我来介绍下这个函数解决的是什么问题，是用来干嘛的。
+
+在编程开发中，我们有时候需要处理一些复杂耗时的逻辑计算逻辑，比如计算一个数组所有元素相加的结果。我们可能会这么写：
+``` js
+const square = val => val*val
+
+let arr = [1,2,31,2,1,2,32,1,6,6,6,3,2,1]
+let total = 0
+forEach(val => {
+  total = total + square(val)
+}, arr)
+console.log(`total: ${total}`)
+```
+这么写其实也没问题，但是相当于数组每一次遍历都会调用```square```，执行```val*val```，我们完全可以利于闭包的和高阶函数来把优化下。比如，我么可以把```square```函数输入的参数和输出的值缓存起来。下次调用```square```函数时，如果缓存中已经存储了相同的输入参数，则从缓存中取出输入参数对应的结果直接返回出去，这样省去了```val*val```计算的时间。
+
+代码实现如下：
+``` js
+const memoized = (fn) => {
+  let cache = []
+  return (arg) => {
+    if (!(arg in cache)) {
+      cache[arg] = fn.apply(this, [arg])
+    }
+    return cache[arg]
+  }
+}
+
+const square = memoized(val => val*val)
+
+let arr = [1,2,31,2,1,2,32,1,6,6,6,3,2,1]
+let total = 0
+forEach(val => {
+  total = total + square(val)
+}, arr)
+console.log(`total: ${total}`)
+```
+
+最后，这个```memoized```函数只是考虑了单参数输入的情况，实际开发中，可能不会这么单一的只考虑单参数情况，多参数该怎么处理呢？哈哈，这个答案希望读到这里的朋友可以自己思考下，可以参考下```underscore```的```memoized```函数实现。
 
 ### 数组的函数式编程
 写作中。。。
