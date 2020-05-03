@@ -460,7 +460,54 @@ console.log(`total: ${total}`)
 最后，这个```memoized```函数只是考虑了单参数输入的情况，实际开发中，可能不会这么单一的只考虑单参数情况，多参数该怎么处理呢？哈哈，这个答案希望读到这里的朋友可以自己思考下，可以参考下```underscore```的```memoized```函数实现。
 
 ### 数组的函数式编程
-写作中。。。
+> 本章节所讲解的所有函数都是投影函数。把函数作用于一个值并创建一个新值的过程成为投影。
+
+##### map函数
+在业务开发中，有时，我们需要对数组的每一个元素做一些处理，然后返回一个新元素，最终会返回一个每个元素都处理后的新数组。
+``` js
+const map = (fn, arr) => {
+  let newArr = []
+  for (const val of arr) {
+    newArr.push(fn(val))
+  }
+  return newArr
+}
+
+let arr = [1, 2, 3, 4, 5, 6]
+
+let newArr = map(val => val+1, arr)
+console.log('newArr:', newArr) // >> [2, 3, 4, 5, 6, 7]
+```
+
+##### filter函数
+假如我想从一个数组中筛选出我想要的数组，该怎么办？```filter```函数就是解决这种问题的。
+``` js
+const filter = (fn, arr) => {
+  let newArr = []
+  for (const val of arr) {
+    if (fn(val)) {
+      newArr.push(val)
+    }
+  }
+  return newArr
+}
+
+let arr = [1, 2, 3, 4, 5, 6]
+
+let newArr = filter(val => val>5, arr)
+console.log('newArr:', newArr) // >> [6]
+```
+
+##### 链接操作
+//写作中。。。
+
+##### 数组扁平化（concatAll函数）
+//写作中。。。
+
+##### reduce函数
+//写作中。。。
+
+##### 数组合并（zip函数）
 
 ### 函数柯里化与偏函数
 写作中。。。
