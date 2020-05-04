@@ -1,5 +1,8 @@
 # js函数式编程——入门篇
 
+### 前言
+本篇文章所有的函数都在 [fun.js](https://github.com/legend-li/MyBlog/blob/master/src/Functional/fun.js) 文件中。
+
 ### 函数式编程的好处
 
 #### 纯函数
