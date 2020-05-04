@@ -588,14 +588,18 @@ const concatAll = (arr) => {
 ```reduce```函数实现如下：
 ``` js
 const reduce = (fn, arr, init) => {
-  let total, i = 0
-  for (val of arr) {
-    if (i === 0) {
-      total = init === undefined ? arr[0] : init
-    } else {
+  let total = init
+  if (!Array.isArray(arr)) return undefined
+  if (total === undefined) {
+    total = arr[0]
+    arr = arr.slice(1)
+  }
+  if (arr.length) {
+    for (val of arr) {
       total = fn(total, val)
     }
-    i++
+  } else {
+    total = fn(arr[0])
   }
   return total
 }
@@ -845,9 +849,9 @@ const partial = (fn, ...argsInit) => {
     let index = 0, args = argsInit.slice(0)
     for (arg of args) {
       if (arg === undefined) {
-        args[index] = _args[index]
+        args[index] = _args[0]
+        _args.splice(0, 1)
       }
-      _args.splice(index, 1)
       index++
     }
     args = _args.length ? args.concat(_args) : args
@@ -872,6 +876,7 @@ delayOneSeconds(() => console.log('第二个处理函数~'))
 ### 函数组合
 > 忽然好开心，终于写到函数组合了，这篇文章好长啊。。。 ^ _ ^
 
+#### 组合
 什么是函数组合呢？
 
 - 就是把多个函数组合成一个函数的方法。
@@ -920,8 +925,60 @@ let totalRating = compose(curryReduce, curryFilter, concatAll)(bookStore)
 
 console.log('totalRating:', totalRating)
 ```
+这个例子中，通过```curry```函数和```partial```函数把```filter```函数和```reduce```函数处理成了只接受一个参数的函数，这样方便组合，因为组合只能组合但参数函数，然后再通过```compose```来组合```curryFilter```函数和```curryReduce```，最后把数据源```bookStore```传递给```compose```函数的返回函数并执行，最终得出了想要的```totalRating```值（前端技术类书籍的评分之和）。
 
+可以看出这种写法要看起来更简单、语法更清晰、代码量更少、也更利于维护、逼格也更高（最重要的^ _ ^）
 
+> 重要提示：组合总是满足结合律，即
+> ``` js
+> compose(a,compose(b, c),compose(d,e)) === compose(a,compose(b,c,d,e)) === compose(a,b,c,d,e)
+> ```
+> 这样的好处就是，允许我们把函数组合到各自所需的```compose```函数中，更加方便我们通过```compose```函数来组合需要的各种更强大的函数，自定义化更高
+
+#### 管道
+上面的```compose```函数只允许我们按照传给```compose```函数的参数从右至左的处理我们的数据，因为最右侧的函数最先执行。
+
+如果我想从左至右处理数据呢，当然也可以，从左至右处理数据，这种从左至右的处理过程称为管道，下面来实现下管道函数```pipe```：
+``` js
+const pipe = (...fns) => {
+  return (arg) => {
+    let result = arg
+    for (const fn of fns) {
+      result = fn(result)
+    }
+    return result
+  }
+}
+```
+用法示例：
+``` js
+let bookStore = [
+  [
+    { id: '1232adad123dda12ga', name: '红楼梦', rating: 7.2, type: '小说类' },
+    { id: '1232adad1fvahag2ga', name: '东游记', rating: 5, type: '小说类' },
+    { id: '1232ad78896kll12ga', name: '西游记', rating: 7.9, type: '小说类' },
+  ],
+  [
+    { id: '1232adad12663822gb', name: '精通html', rating: 3.2, type: '前端技术类' },
+    { id: '1232adad12263582ga', name: '移动端布局', rating: 2, type: '前端技术类' },
+    { id: '1232adad12lmcx12ga', name: 'js函数式编程', rating: 8, type: '前端技术类' },
+    { id: '1232adad120kouy7ga', name: '数据结构与算法', rating: 7.3, type: '前端技术类' },
+    { id: '1232adad123vmzliea', name: 'css权威指南', rating: 6, type: '前端技术类' },
+  ]
+]
+
+let curryFilter = curry(filter, book => book.type === '前端技术类') // 把 filter 函数柯里化，同时，预设过滤条件处理函数
+
+let curryReduce = partial(reduce, (total, book) => total + book.rating, undefined, 0) // 通过偏函数给 reduce 预设逻辑处理函数和初始值
+
+let totalRating = pipe(concatAll, curryFilter, curryReduce)(bookStore)
+
+console.log('totalRating:', totalRating)
+```
+
+推荐大家多在项目中适合的地方时使用组合或者管道来构建代码，这样可以大大减少代码体积，提高代码质量。
+
+很多框架中也用到了组合的思想，比如```redux```
 
 ### 函子
 本猿累了，写不动了，篇幅有点太长了。。。
