@@ -155,7 +155,7 @@ getDataTransfrom('fun', numberTransfrom, stringTransfrom) // >> numberTransfrom
 
 #### 简单的抽象
 
-##### froEach函数
+##### forEach函数
 在业务开发中，经常会用到```forEach```函数来遍历数组，并且在遍历时，针对每个遍历到的值做处理。下面我们用高阶函数来抽象出一个```forEach```函数:
 ``` js
 const forEach = (fn, arr) => {
