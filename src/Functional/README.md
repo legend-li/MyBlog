@@ -499,13 +499,127 @@ console.log('newArr:', newArr) // >> [6]
 ```
 
 ##### 链接操作
-//写作中。。。
+为了达到某个目的，有时需要链接多个函数才能搞定，比如，有一个数组```bookStore```，数据如下：
+``` js
+let bookStore = [
+  { id: '1232adad123dda12ga', name: '红楼梦', rating: 7.2 },
+  { id: '1232adad12663822gb', name: '精通html', rating: 3.2 },
+  { id: '1232adad12263582ga', name: '移动端布局', rating: 2 },
+  { id: '1232adad1fvahag2ga', name: '东游记', rating: 5 },
+  { id: '1232ad78896kll12ga', name: '西游记', rating: 7.9 },
+  { id: '1232adad12lmcx12ga', name: 'js函数式编程', rating: 8 },
+  { id: '1232adad120kouy7ga', name: '数据结构与算法', rating: 7.3 },
+  { id: '1232adad123vmzliea', name: 'css权威指南', rating: 6 },
+]
+```
+我想取出评分大于```7```的书籍，并且只返回书籍的```id```，通过前面编写的```filter```函数来过滤出评分大于```7```的书籍，然后再通过```map```函数来返回书籍```id```组成的新数组，这里用链接方式来编写实现代码，如下：
+``` js
+let bookIds = map(book => book.id, filter(book => book.rating > 7, bookStore))
+console.log('bookIds:', bookIds)
+```
+这段代码是把```filter(book => book.rating > 7, bookStore)```的结果作为```map```函数的数据源，然后```map```再遍历过滤后的这个数据源，返回```book.id```组成的新数组，这样就达到了“取出评分大于```7```的书籍，并且只返回书籍的```id```”的目的。这种连接方式，代码量会少很多。不过，大家有没有发现代码好像看起来不是那么直观，比较丑。放心，这个我们后面会继续优化的。
+
+> 后面会用组合来优化这种连接方式，让代码更易读。
 
 ##### 数组扁平化（concatAll函数）
-//写作中。。。
+假如我把上面的```bookStore```数据改成这样：
+``` js
+let bookStore = [
+  [
+    { id: '1232adad123dda12ga', name: '红楼梦', rating: 7.2, type: '小说类' },
+    { id: '1232adad1fvahag2ga', name: '东游记', rating: 5, type: '小说类' },
+    { id: '1232ad78896kll12ga', name: '西游记', rating: 7.9, type: '小说类' },
+  ],
+  [
+    { id: '1232adad12663822gb', name: '精通html', rating: 3.2, type: '前端技术类' },
+    { id: '1232adad12263582ga', name: '移动端布局', rating: 2, type: '前端技术类' },
+    { id: '1232adad12lmcx12ga', name: 'js函数式编程', rating: 8, type: '前端技术类' },
+    { id: '1232adad120kouy7ga', name: '数据结构与算法', rating: 7.3, type: '前端技术类' },
+    { id: '1232adad123vmzliea', name: 'css权威指南', rating: 6, type: '前端技术类' },
+  ]
+]
+```
+然后，我再要求“取出评分大于```7```的书籍，并且只返回书籍的```id```”，是不是就不能像上面那样直接来通过```filter```和```map```函数来处理了。
+
+因为```bookStore```变成了二维数组，那么怎么办呢？
+
+这就用到了另一个常用函数，```concatAll```，也就是数组扁平化函数，俗称：数组拍平，通常指把多纬度数组变为一维度数组。毕竟一维数组更加方便处理。
+
+下面实现下```concatAll```：
+``` js
+const concatAll = (arr) => {
+  let newArr = []
+  for (val of arr) {
+    newArr.push.apply(newArr, val)
+  }
+  return newArr
+}
+```
+现在我们先用```concatAll```函数把数组拍平后，再取出评分大于```7```的书籍，并且只返回书籍的```id```，就简单了，代码逻辑如下：
+``` js
+let bookIds = map(book => book.id, filter(book => book.rating > 7, concatAll(bookStore)))
+console.log('bookIds:', bookIds)
+```
+
+如果需要拍平一个三维甚至四维数组，我们可以这么修改下```concatAll```函数：
+``` js
+const concatAll = (arr) => {
+  let newArr = []
+  for (val of arr) {
+    if (Array.isArray(val)) {
+      newArr.push.apply(newArr, concatAll(val))
+    } else {
+      newArr.push(val)
+    }
+  }
+  return newArr
+}
+```
+
+> 提示：这里用到了递归函数的思想，如果对递归函数不了解的，可以看我这篇文章：[逐步学习什么是递归？通过使用场景来深入认识递归。](https://juejin.im/post/5a94d6476fb9a06348538871)
 
 ##### reduce函数
-//写作中。。。
+```reduce```函数对数组中的每个元素执行一个由您提供的```reducer```函数(升序执行)，将其结果汇总为单个返回值。
+
+有什么用处呢？
+
+比如我像计算数组的所有项相加的总数是多少，这时就可以用```reduce```函数来处理。
+
+```reduce```函数实现如下：
+``` js
+const reduce = (fn, arr, init) => {
+  let total, i = 0
+  for (val of arr) {
+    if (i === 0) {
+      total = init === undefined ? arr[0] : init
+    } else {
+      total = fn(total, val)
+    }
+    i++
+  }
+  return total
+}
+```
+如果我想计算出```bookStore```下面的所有前端技术类书籍的评分之和。可以这样：
+``` js
+let bookStore = [
+  [
+    { id: '1232adad123dda12ga', name: '红楼梦', rating: 7.2, type: '小说类' },
+    { id: '1232adad1fvahag2ga', name: '东游记', rating: 5, type: '小说类' },
+    { id: '1232ad78896kll12ga', name: '西游记', rating: 7.9, type: '小说类' },
+  ],
+  [
+    { id: '1232adad12663822gb', name: '精通html', rating: 3.2, type: '前端技术类' },
+    { id: '1232adad12263582ga', name: '移动端布局', rating: 2, type: '前端技术类' },
+    { id: '1232adad12lmcx12ga', name: 'js函数式编程', rating: 8, type: '前端技术类' },
+    { id: '1232adad120kouy7ga', name: '数据结构与算法', rating: 7.3, type: '前端技术类' },
+    { id: '1232adad123vmzliea', name: 'css权威指南', rating: 6, type: '前端技术类' },
+  ]
+]
+
+let totalRating = reduce((total, book) => total + book.rating, filter(book => book.type === '前端技术类', concatAll(bookStore)), 0)
+console.log('totalRating:', totalRating)
+```
 
 ##### 数组合并（zip函数）
 
