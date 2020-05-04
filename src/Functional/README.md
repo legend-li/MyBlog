@@ -870,9 +870,66 @@ delayOneSeconds(() => console.log('第二个处理函数~'))
 所以，在实际开发中，根据不同的业务场景，不同的需求，来选择使用```curry```或者```partial```
 
 ### 函数组合
-终于写到函数组合了，这篇文章好长啊。。。
+> 忽然好开心，终于写到函数组合了，这篇文章好长啊。。。 ^ _ ^
+
+什么是函数组合呢？
+
+- 就是把多个函数组合成一个函数的方法。
+
+在函数式编程中，我会把很多通用的功能抽象成一个一个的小函数，然后通过函数组合的方式来组合出功能更强大、功能相对专一的函数。
+
+这样做的好处是，我不用每次都去现写一个复杂的功能强大的函数，只需要通过组合小函数就可以实现。
+
+组合的具体表现会是这样：把```a(b(c(d(e(data)))))```转为```compose(a, b, c, d, e)(data)```
+
+先来实现一个```compose```函数：
+``` js
+const compose = (...fns) => {
+  return (arg) => {
+    let fnArr = fns.reverse(), result = arg
+    for (const fn of fnArr) {
+      result = fn(result)
+    }
+    return result
+  }
+}
+```
+
+下面通过一个例子来说明组合的好处：
+``` js
+let bookStore = [
+  [
+    { id: '1232adad123dda12ga', name: '红楼梦', rating: 7.2, type: '小说类' },
+    { id: '1232adad1fvahag2ga', name: '东游记', rating: 5, type: '小说类' },
+    { id: '1232ad78896kll12ga', name: '西游记', rating: 7.9, type: '小说类' },
+  ],
+  [
+    { id: '1232adad12663822gb', name: '精通html', rating: 3.2, type: '前端技术类' },
+    { id: '1232adad12263582ga', name: '移动端布局', rating: 2, type: '前端技术类' },
+    { id: '1232adad12lmcx12ga', name: 'js函数式编程', rating: 8, type: '前端技术类' },
+    { id: '1232adad120kouy7ga', name: '数据结构与算法', rating: 7.3, type: '前端技术类' },
+    { id: '1232adad123vmzliea', name: 'css权威指南', rating: 6, type: '前端技术类' },
+  ]
+]
+
+let curryFilter = curry(filter, book => book.type === '前端技术类') // 把 filter 函数柯里化，同时，预设过滤条件处理函数
+
+let curryReduce = partial(reduce, (total, book) => total + book.rating, undefined, 0) // 通过偏函数给 reduce 预设逻辑处理函数和初始值
+
+let totalRating = compose(curryReduce, curryFilter, concatAll)(bookStore)
+
+console.log('totalRating:', totalRating)
+```
+
 
 
 ### 函子
 本猿累了，写不动了，篇幅有点太长了。。。
+
 函子先不讲了，以后有空的话，出进阶篇时，再写函子的内容吧。。。
+
+
+### 最后
+本篇文章，目的只是用来讲解函数式编程的一些方法和好处，整篇文章中的代码，只是用来阐述函数式编程，很多函数方法实现并没有考虑性能、容错、非正常调用等情况。
+
+希望这篇文章可以帮助大家在开发中编写出高质量、可维护、更少代码量的优雅代码。
