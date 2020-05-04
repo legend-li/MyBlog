@@ -622,9 +622,252 @@ console.log('totalRating:', totalRating)
 ```
 
 ##### 数组合并（zip函数）
+并不是所有的数据源都像```bookStore```这么好处理的，在业务开发中，可能服务端接口返回的数据只有一部分，另一部分需要从另外一个接口获取，两个接口的数据都获取到后，前端需要把数据合并起来，才是完整的数据。比如接口1取到的数据是：
+``` js
+let bookStore1 = [
+  { id: '1232adad123dda12ga', type: '小说类' },
+  { id: '1232adad1fvahag2ga', type: '小说类' },
+  { id: '1232ad78896kll12ga', type: '小说类' },
+  { id: '1232adad12663822gb', type: '前端技术类' },
+  { id: '1232adad12263582ga', type: '前端技术类' },
+  { id: '1232adad12lmcx12ga', type: '前端技术类' },
+  { id: '1232adad120kouy7ga', type: '前端技术类' },
+  { id: '1232adad123vmzliea', type: '前端技术类' },
+]
+```
+接口二取到的数据是：
+``` js
+let bookStore2 = [
+  { id: '1232adad123dda12ga', rating: 7.2, name: '红楼梦' },
+  { id: '1232adad1fvahag2ga', rating: 5, name: '东游记' },
+  { id: '1232ad78896kll12ga', rating: 7.9, name: '西游记' },
+  { id: '1232adad12663822gb', rating: 3.2, name: '精通html' },
+  { id: '1232adad12263582ga', rating: 2, name: '移动端布局' },
+  { id: '1232adad12lmcx12ga', rating: 8, name: 'js函数式编程' },
+  { id: '1232adad120kouy7ga', rating: 7.3, name: '数据结构与算法' },
+  { id: '1232adad123vmzliea', rating: 6, name: 'css权威指南' },
+]
+```
+我现在还想取出 “前端技术类” 书籍的评分之和。该怎么做呢？
 
+答案就是，先把```bookStore1```和```bookStore2```合并成一个数组，然后再过滤出 “前端技术类” 书籍，然后再计算 “前端技术类” 书籍的评分之和。
+
+具体实现如下：
+``` js
+const zip = (fn, arr1, arr2) => {
+  let minLen = Math.min(arr1.length, arr2.length),
+      i = 0,
+      arr = []
+  for (const val of arr1) {
+    if (i < minLen) {
+      arr.push(fn(val, arr2[i]))
+    } else {
+      break
+    }
+    i++
+  }
+  return arr
+}
+
+reduce((total, book) => total + book.rating, 
+  filter(book => book.type === '前端技术类', 
+    zip((val1, val2) => {
+        let obj = {}
+        if (val1.id === val2.id) {
+            obj = Object.assign({}, val1, val2)
+        }
+        return obj
+      },
+    bookStore1, bookStore2)
+  ),
+0) // >> 23.3
+```
 ### 函数柯里化与偏函数
-写作中。。。
+#### 柯里化（curry）
+柯里化就是把一个多参数函数变为多个单参数函数。
+
+柯里化通常可以帮助我们抽离代码中的重复代码，还可以配合组合一起使用。后面会做详细解释。
+
+先实现一个```curry```函数，比如一个```sum```函数：
+``` js
+const sum = (a, b) => a+b
+```
+目前可以这么使用```sum```函数：
+``` js
+sum(1, 2)
+```
+想把```sum```函数通过```curry1```函数转换后，用法变为```sum(1)(2)```，尝试实现下```curry1```函数：
+``` js
+const curry1 = (fn) => {
+  return (arg1) => {
+    return (arg2) => {
+        return fn.call(this, arg1, arg2)
+    }
+  }
+}
+```
+使用```curry1```转换下```sum```函数：
+``` js
+let currySum = curry1(sum)
+console.log(currySum(1)(2)) // >> 3
+```
+执行代码，正确的输出了```3```。
+
+但是，我们这个```curry1```函数只能处理两个参数的函数，如果想支持任何参数数量的函数柯里化，怎么办呢？
+
+改动下```curry1```函数为```curry2```：
+``` js
+const curry2 = (fn, args = []) => {
+  let argLens = fn.length
+  return (...args2) => {
+    let _args = args.concat(args2)
+    if (_args.length < argLens) {
+      return curry2.call(null, fn, _args)
+    } else {
+      return fn.apply(this, _args)
+    }
+  }
+}
+```
+试用下新的```curry2```函数：
+``` js
+let sum2 = (arg1, arg2) => arg1 + arg2
+let sum3 = (arg1, arg2, arg3) => arg1 + arg2 + arg3
+
+let currySum2 = curry2(sum2)
+let currySum3 = curry2(sum3)
+currySum2(1)(2) // >> 3
+currySum3(1)(2)(3) // >> 6
+```
+好了，我们现在解决了支持多种参数数量的函数柯里化，那么如果是一个未知参数数量的函数呢，比如：
+``` js
+const sum = (...args) => reduce((total, val) => total+val, args)
+```
+ok，那么我们来解决下这个问题。再次修改柯里化函数如下：
+``` js
+const curry3 = (fn, args = []) => {
+  let argLens = fn.length
+  return (...args2) => {
+    let _args = args.concat(args2)
+    if ((argLens > 0 && _args.length < argLens) || (argLens === 0 && args2.length !== 0)) {
+      return curry3.call(null, fn, _args)
+    } else {
+      return fn.apply(this, _args)
+    }
+  }
+}
+```
+修改了判断条件。
+```argLens > 0 && _args.length < argLens```表示：当需要柯里化的函数有固定参数数量时，同时传入的参数数量累加后小于函数固定参数数量时，执行```return curry3.call(null, fn, _args)```；
+
+```argLens === 0 && _args.length !== 0```表示：当需要柯里化的函数没有固定参数数量时，同时当次函数执行没有传递进来参数时，则认为终止柯里化函数调用，并且调用执行```fn```函数，即```return fn.apply(this, _args)```
+
+用法示例：
+``` js
+const sum = (...args) => reduce((total, val) => total+val, args)
+
+let currySum = curry3(sum)
+currySum(1)(2)(3)(4)(5)(6)() // >> 21
+```
+最后再优化下柯里化函数，支持在调用```curry```时，对参数进行预设。
+修改```curry```函数如下：
+``` js
+const curry = (fn, ...args) => {
+  let argLens = fn.length
+  return (...args2) => {
+    let _args = args.concat(args2)
+    if ((argLens > 0 && _args.length < argLens) || (argLens === 0 && args2.length !== 0)) {
+      return curry.call(null, fn, ..._args)
+    } else {
+      return fn.apply(this, _args)
+    }
+  }
+}
+```
+用法示例：
+``` js
+const sum = (...args) => reduce((total, val) => total+val, args)
+
+let currySum = curry(sum, 1, 2, 3)
+currySum(1)(2)(3)(4)(5)(6)() // >> 27
+```
+
+> 说明下，为了方便开发人员使用，所以通过```curry```函数转换后的函数，支持传递多个参数调用，比如：
+> ``` js 
+> let currySum = curry3(sum, 1, 2, 3);
+> currySum(1, 2)(1)() // >> 10
+> ```
+
+可能你会问：```curry```函数有什么用处？
+
+```curry```函数的作用是把一个多参数函数转成多个单一参数的函数，说白了也就是把一个多参数函数拆成多个单参数函数。
+
+既然知道了```curry```的作用，就好解释它的用处了。
+
+比如，我有一个```http```请求函数，多个地方都调用这个函数来请求数据：
+``` js
+const fetchData = (type, data) => {
+  ...
+}
+
+fetchData('GET', {id: '2e3adad3ehgfr567'})
+
+fetchData('GET', {id: '89dxvfre9fggfgf9'})
+
+fetchData('PUT', {id: '89dxvfre9fggfgf9', delete: true})
+```
+可以看到，我每次调用```fetchData```都需要传递```type```参数给```fetchData```，如果用```curry```把```fetchData```柯里化后呢？
+``` js
+let fetchData = curry((type, data) => {
+  ...
+})
+const getData = fetchData('GET')
+const putData = fetchData('PUT')
+
+getData({id: '2e3adad3ehgfr567'})
+
+getData({id: '89dxvfre9fggfgf9'})
+
+putData({id: '89dxvfre9fggfgf9', delete: true})
+```
+这样```curry```后，就可以把通用部分抽离出来来，在每次使用时，只需要写当次业务需求关注的逻辑即可，减少了代码量。通用代码也得到了抽离。
+
+用习惯了后，相信你会很喜欢这种用法的。
+
+当然了，柯里化还可以配合函数组合来使用，可以封装出更加优雅，利于维护，代码总体积小的代码。具体将在组合章节进行讲解。
+
+#### 偏函数
+
+偏函数可以使一个函数拥有预设的初始参数，先来实现一个偏函数```partial```：
+``` js
+const partial = (fn, ...argsInit) => {
+  return (..._args) => {
+    let index = 0, args = argsInit.slice(0)
+    for (arg of args) {
+      if (arg === undefined) {
+        args[index] = _args[index]
+      }
+      _args.splice(index, 1)
+      index++
+    }
+    args = _args.length ? args.concat(_args) : args
+    return  fn(...args)
+  }
+}
+```
+具体用法如下：
+``` js
+let delayOneSeconds = partial(setTimeout, undefined, 1000)
+
+delayOneSeconds(() => console.log((new Date()).toLocaleString()))
+
+delayOneSeconds(() => console.log('第二个处理函数~'))
+```
+```partial```可以作为```curry```函数的互补，因为，像在这个例子中的```setTimeout```，我们期望的是抽离定时的时间，做一个一秒定时器，用```curry```的化，就不合适了，比较```curry```只能顺序柯里化参数。
+
+```partial```则不关心参数顺序，只需要对需要预设参数值的地方，预设上值即可，不需要预设参数值的用```undefined```来占位即可。
+
+所以，在实际开发中，根据不同的业务场景，不同的需求，来选择使用```curry```或者```partial```
 
 ### 函数组合
 写作中。。。
