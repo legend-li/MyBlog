@@ -6,3 +6,5 @@
 ### 3. [js函数式编程——入门篇](https://github.com/legend-li/MyBlog/tree/master/src/Functional)
 
 ### 4. [编写js代码时，不写分号需要注意的地方](https://github.com/legend-li/MyBlog/tree/master/src/JsDoNotNeesSemicolon)
+
+### 5. [从浏览器渲染流程中窥视页面性能优化](https://github.com/legend-li/MyBlog/tree/master/src/BrowerRenderAnalysis)
